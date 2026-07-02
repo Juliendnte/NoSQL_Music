@@ -65,14 +65,13 @@ class MusicBrainzClient:
     async def browse_recordings_by_artist(self, artist_mbid: str, limit: int = 25) -> list[dict]:
         """
         Récupère les enregistrements (morceaux) d'un artiste.
-        On utilise "browse" (pas "lookup") car c'est la méthode recommandée
-        par MusicBrainz pour lister les entités liées à un artiste.
-        inc=artist-credits est essentiel : c'est ce qui nous permet de
-        détecter les featurings / collaborations.
+        Note: pour le browse /recording, MusicBrainz n'autorise QUE
+        "artist-credits" et "isrcs" en inc= (pas "releases", qui renvoie 400).
+        On récupère les releases séparément via browse_releases_by_artist.
         """
         data = await self._get(
             "/recording",
-            {"artist": artist_mbid, "inc": "artist-credits+releases", "limit": limit},
+            {"artist": artist_mbid, "inc": "artist-credits", "limit": limit},
         )
         return data.get("recordings", [])
 
