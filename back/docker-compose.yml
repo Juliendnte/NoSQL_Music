@@ -29,13 +29,5 @@ services:
     depends_on:
       neo4j:
         condition: service_healthy
-
-  # frontend:
-  #   build: ./frontend
-  #   ports:
-  #     - "3000:3000"
-  #   depends_on:
-  #     - api
-
 volumes:
   neo4j_data:

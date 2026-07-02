@@ -55,7 +55,6 @@ def get_artist_releases(mbid: str, limit: int = 50) -> list[dict]:
     rows = run_query(query, {"mbid": mbid, "limit": limit})
     return [r["release"] for r in rows]
 
-
 def get_artist_collaborations(mbid: str, limit: int = 50) -> list[dict]:
     """
     Pour chaque artiste collaborateur : combien de morceaux partagés

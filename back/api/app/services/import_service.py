@@ -196,6 +196,7 @@ def _link_label(release_mbid: str, label_data: dict) -> None:
 async def import_artist(mbid: str, max_recordings: int = 25, max_releases: int = 25) -> dict:
     # 1. Détails de l'artiste principal
     artist_data = await mb_client.get_artist(mbid)
+
     extra = {
         "type": artist_data.get("type"),
         "country": artist_data.get("country"),

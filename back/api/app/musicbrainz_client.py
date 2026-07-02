@@ -47,7 +47,7 @@ class MusicBrainzClient:
         async with httpx.AsyncClient(timeout=15.0) as client:
             resp = await client.get(url, params=params, headers=self.headers)
             if resp.status_code == 503:
-                # MusicBrainz renvoie 503 quand on va trop vite -> on retente
+                # MusicBrainz renvoie 503 quand on va trop vite → on retente
                 raise httpx.HTTPStatusError("rate limited", request=resp.request, response=resp)
             resp.raise_for_status()
             return resp.json()
