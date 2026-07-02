@@ -2,7 +2,7 @@
 
 Exploration des collaborations musicales à partir de MusicBrainz, stockées et interrogées dans Neo4j.
 
-Ce dépôt contient pour l'instant le **backend / API** (FastAPI + Neo4j). Le frontend sera ajouté dans `frontend/`.
+Ce dossier contient le **backend / API** (FastAPI + Neo4j). Voir le [README à la racine](../README.md) pour la présentation générale du projet (sujet, stack complète, modèle de données, démarrage via Docker Compose) — le frontend vit dans [`../frontend/`](../frontend).
 
 ## Stack
 
@@ -28,24 +28,11 @@ Ce dépôt contient pour l'instant le **backend / API** (FastAPI + Neo4j). Le fr
 ├── data/                  # jeux de données / exports
 ├── docs/                  # documentation du modèle et des choix techniques
 ├── Dockerfile
-├── docker-compose.yml
 ├── pyproject.toml         # dépendances (remplace requirements.txt)
-├── uv.lock                # versions verrouillées, à committer
-└── .env.example
+└── uv.lock                # versions verrouillées, à committer
 ```
 
-## Démarrage rapide (Docker)
-
-```bash
-cp .env.example .env
-# édite .env si besoin (mot de passe Neo4j, User-Agent MusicBrainz...)
-
-docker compose up --build
-```
-
-- API disponible sur http://localhost:8000
-- Documentation interactive (Swagger) sur http://localhost:8000/docs
-- Neo4j Browser sur http://localhost:7474 (login: `neo4j` / mot de passe défini dans `.env`)
+Le `docker-compose.yml` et le `.env.example` vivent à la racine du repo (ils orchestrent aussi le frontend) — voir le [README principal](../README.md#démarrage-rapide-docker-compose) pour la commande de démarrage.
 
 ## Sans Docker (dev local avec uv)
 
@@ -53,10 +40,10 @@ docker compose up --build
 # installer uv si besoin : https://docs.astral.sh/uv/getting-started/installation/
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-cp .env.example .env
-uv sync                 # installe les dépendances dans .venv/ à partir de uv.lock
+cp ../.env.example .env   # le template est à la racine du repo
+uv sync                   # installe les dépendances dans .venv/ à partir de uv.lock
 
-# Neo4j doit tourner en local, ou via : docker compose up neo4j
+# Neo4j doit tourner (localement, ou via : docker compose up neo4j depuis la racine)
 uv run uvicorn api.app.main:app --reload
 ```
 
@@ -107,6 +94,5 @@ curl http://localhost:8000/api/artists/056e4f3e-d505-4dad-8ec1-d04f521cbb56/coll
 
 ## À venir
 
-- `frontend/` : interface web (recherche, fiches artistes, graphe, stats)
 - `data/` : exports / jeux de données
 - `docs/` : documentation du modèle et des choix techniques
