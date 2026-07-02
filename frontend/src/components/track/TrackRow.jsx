@@ -1,8 +1,11 @@
 import { Link } from "react-router-dom";
 import { Music2 } from "lucide-react";
+import { Badge } from "../ui/Badge";
 import { formatDuration, formatDate } from "../../lib/format";
 
-export function TrackRow({ recording, artistNames, showLink = false }) {
+const ROLE_LABELS = { PERFORMED: "Principal", FEATURED_ON: "Invité" };
+
+export function TrackRow({ recording, artistNames, role, showLink = false }) {
   const Wrapper = showLink ? Link : "div";
   return (
     <Wrapper
@@ -17,6 +20,7 @@ export function TrackRow({ recording, artistNames, showLink = false }) {
         <span className="block truncate font-medium text-foreground">{recording.title}</span>
         {artistNames && <span className="block truncate text-sm text-foreground-muted">{artistNames}</span>}
       </span>
+      {role && ROLE_LABELS[role] && <Badge>{ROLE_LABELS[role]}</Badge>}
       <span className="shrink-0 font-mono text-sm text-foreground-muted tabular-nums">{formatDate(recording.firstReleaseDate)}</span>
       <span className="shrink-0 font-mono text-sm text-foreground-muted tabular-nums">{formatDuration(recording.length)}</span>
     </Wrapper>

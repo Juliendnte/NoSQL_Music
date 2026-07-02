@@ -30,11 +30,7 @@ export function CollaborationGraph({ nodes, edges, onSelectArtist }) {
     const linkGroup = root.append("g").attr("stroke", "rgba(255,255,255,0.18)");
     const nodeGroup = root.append("g");
 
-    const link = linkGroup
-      .selectAll("line")
-      .data(simEdges)
-      .join("line")
-      .attr("stroke-width", (d) => 1 + Math.min(d.weight ?? 1, 4));
+    const link = linkGroup.selectAll("line").data(simEdges).join("line").attr("stroke-width", 1.5);
 
     const node = nodeGroup
       .selectAll("g")

@@ -9,6 +9,7 @@ export function ArtistCard({ artist }) {
     <Card
       as={Link}
       to={`/artists/${artist.mbid}`}
+      state={{ name: artist.name }}
       className="flex items-center gap-4 p-4 transition-colors hover:border-accent focus-visible:border-accent"
     >
       <span className="flex size-12 shrink-0 items-center justify-center rounded-full border border-border bg-surface-muted font-display text-sm font-semibold text-foreground">
@@ -18,7 +19,7 @@ export function ArtistCard({ artist }) {
       <span className="min-w-0 flex-1">
         <span className="block truncate font-medium text-foreground">{artist.name}</span>
         <span className="mt-1 flex flex-wrap items-center gap-1.5">
-          <Badge>{artist.type}</Badge>
+          {artist.type && <Badge>{artist.type}</Badge>}
           {artist.country && <Badge>{artist.country}</Badge>}
           {artist.beginDate && (
             <span className="text-xs text-foreground-muted tabular-nums">
