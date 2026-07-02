@@ -49,7 +49,7 @@ def get_artist_releases(mbid: str, limit: int = 50) -> list[dict]:
     query = """
     MATCH (a:Artist {mbid: $mbid})-[:PERFORMED|FEATURED_ON]->(:Recording)-[:APPEARS_ON]->(rel:Release)
     RETURN DISTINCT rel { .* } AS release
-    ORDER BY rel.date DESC
+    ORDER BY release.date DESC
     LIMIT $limit
     """
     rows = run_query(query, {"mbid": mbid, "limit": limit})

@@ -35,7 +35,7 @@ class MusicBrainzClient:
             self._last_call = time.monotonic()
 
     @retry(
-        stop=stop_after_attempt(3),
+        stop=stop_after_attempt(5),
         wait=wait_fixed(1.5),
         retry=retry_if_exception_type((httpx.HTTPStatusError, httpx.TransportError)),
         reraise=True,
