@@ -17,7 +17,7 @@ services:
       retries: 10
 
   api:
-    build: .
+    build: ./back
     container_name: musicgraph-api
     env_file: .env
     environment:
@@ -25,17 +25,22 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./api:/app/api
+      - ./back/api:/app/api
     depends_on:
       neo4j:
         condition: service_healthy
 
-  # frontend:
-  #   build: ./frontend
-  #   ports:
-  #     - "3000:3000"
-  #   depends_on:
-  #     - api
+  frontend:
+    build: ./frontend
+    container_name: musicgraph-frontend
+    env_file: .env
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - api
 
 volumes:
   neo4j_data:
