@@ -7,29 +7,35 @@ const q = (params) => {
   return search ? `?${search}` : "";
 };
 
-export const api = USE_MOCKS
-  ? mockApi
-  : {
-      searchArtists: (query) => fetchJson(`/search/artists${q({ q: query })}`),
-      getArtists: () => fetchJson("/artists"),
-      getArtist: (id) => fetchJson(`/artists/${id}`),
-      getArtistRecordings: (id) => fetchJson(`/artists/${id}/recordings`),
-      getArtistReleases: (id) => fetchJson(`/artists/${id}/releases`),
-      getArtistCollaborations: (id) => fetchJson(`/artists/${id}/collaborations`),
+const realApi = {
+  searchArtists: (query, limit) => fetchJson(`/search/artists${q({ q: query, limit })}`),
+  importArtist: ({ mbid, maxRecordings, maxReleases }) =>
+    fetchJson("/import/artists", {
+      method: "POST",
+      body: JSON.stringify({ mbid, maxRecordings, maxReleases }),
+    }),
 
-      getRecordings: () => fetchJson("/recordings"),
-      getRecording: (id) => fetchJson(`/recordings/${id}`),
-      getRecordingArtists: (id) => fetchJson(`/recordings/${id}/artists`),
+  getArtists: async (params) => (await fetchJson(`/artists${q(params)}`)).items,
+  getArtist: (id) => fetchJson(`/artists/${id}`),
+  getArtistRecordings: (id, limit) => fetchJson(`/artists/${id}/recordings${q({ limit })}`),
+  getArtistReleases: (id, limit) => fetchJson(`/artists/${id}/releases${q({ limit })}`),
+  getArtistCollaborations: (id, limit) => fetchJson(`/artists/${id}/collaborations${q({ limit })}`),
 
-      getReleases: () => fetchJson("/releases"),
-      getRelease: (id) => fetchJson(`/releases/${id}`),
+  getRecordings: (params) => fetchJson(`/recordings${q(params)}`),
+  getRecording: (id) => fetchJson(`/recordings/${id}`),
+  getRecordingArtists: (id) => fetchJson(`/recordings/${id}/artists`),
 
-      getGraph: () => fetchJson("/graph"),
-      getArtistGraph: (id) => fetchJson(`/graph/artists/${id}`),
+  getReleases: (params) => fetchJson(`/releases${q(params)}`),
+  getRelease: (id) => fetchJson(`/releases/${id}`),
 
-      getStatsOverview: () => fetchJson("/stats/overview"),
-      getTopCollaborations: (limit) => fetchJson(`/stats/top-collaborations${q({ limit })}`),
-      getTopArtists: (limit) => fetchJson(`/stats/top-artists${q({ limit })}`),
-      getTopGenres: (limit) => fetchJson(`/stats/top-genres${q({ limit })}`),
-      getTopTracks: (limit) => fetchJson(`/stats/top-tracks${q({ limit })}`),
-    };
+  // /graph/collaborations returns Artist-only nodes/edges — the cleanest shape for the network view.
+  getCollaborationGraph: (limit) => fetchJson(`/graph/collaborations${q({ limit })}`),
+
+  getStatsOverview: () => fetchJson("/stats/overview"),
+  getTopCollaborations: (limit) => fetchJson(`/stats/top-collaborations${q({ limit })}`),
+  getTopArtists: (limit) => fetchJson(`/stats/top-artists${q({ limit })}`),
+  getTopGenres: (limit) => fetchJson(`/stats/top-genres${q({ limit })}`),
+  getTopBridgeRecordings: (limit) => fetchJson(`/stats/top-bridge-recordings${q({ limit })}`),
+};
+
+export const api = USE_MOCKS ? mockApi : realApi;
