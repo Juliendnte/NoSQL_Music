@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Music2 } from "lucide-react";
 import { TrackRow } from "../components/track/TrackRow";
 import { SearchInput } from "../components/ui/SearchInput";
@@ -9,22 +9,24 @@ import { api } from "../api";
 
 export function TracksPage() {
   const { data: recordings, loading: loadingRecordings } = useApi(() => api.getRecordings(), []);
-  const { data: artists, loading: loadingArtists } = useApi(() => api.getArtists(), []);
+
+  // The recording list doesn't embed artist names — resolved per-track in parallel
+  // (bounded by the page's own limit, so this stays a handful of local requests).
+  const { data: artistNamesByRecording, loading: loadingNames } = useApi(async () => {
+    if (!recordings?.length) return new Map();
+    const entries = await Promise.all(
+      recordings.map(async (recording) => {
+        const recordingArtists = await api.getRecordingArtists(recording.mbid);
+        return [recording.mbid, recordingArtists.map((a) => a.name).join(", ")];
+      })
+    );
+    return new Map(entries);
+  }, [recordings]);
+
   const [query, setQuery] = useState("");
-  const loading = loadingRecordings || loadingArtists;
+  const loading = loadingRecordings || loadingNames;
 
-  const artistNameById = useMemo(() => {
-    const map = new Map();
-    for (const artist of artists ?? []) map.set(artist.mbid, artist.name);
-    return map;
-  }, [artists]);
-
-  const filtered = useMemo(() => {
-    if (!recordings) return [];
-    const q = query.trim().toLowerCase();
-    if (!q) return recordings;
-    return recordings.filter((r) => r.title.toLowerCase().includes(q));
-  }, [recordings, query]);
+  const filtered = (recordings ?? []).filter((r) => r.title.toLowerCase().includes(query.trim().toLowerCase()));
 
   return (
     <div className="flex flex-col gap-6">
@@ -47,10 +49,7 @@ export function TracksPage() {
         <ul className="flex flex-col gap-2">
           {filtered.map((recording) => (
             <li key={recording.mbid}>
-              <TrackRow
-                recording={recording}
-                artistNames={recording.artistIds?.map((aid) => artistNameById.get(aid)).filter(Boolean).join(", ")}
-              />
+              <TrackRow recording={recording} artistNames={artistNamesByRecording?.get(recording.mbid)} />
             </li>
           ))}
         </ul>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { SearchCode } from "lucide-react";
+import { SearchCode, ServerCrash } from "lucide-react";
 import { SearchInput } from "../components/ui/SearchInput";
 import { ArtistCard } from "../components/artist/ArtistCard";
 import { EmptyState } from "../components/ui/EmptyState";
@@ -12,6 +12,8 @@ export function SearchPage() {
   const [query, setQuery] = useState(params.get("q") ?? "");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [retryToken, setRetryToken] = useState(0);
 
   useEffect(() => {
     const trimmed = query.trim();
@@ -19,20 +21,37 @@ export function SearchPage() {
 
     if (!trimmed) {
       setResults([]);
+      setError(null);
+      setLoading(false);
       return;
     }
 
+    // Guards against a slow, now-stale request overwriting a newer one's result.
+    let active = true;
     setLoading(true);
+    setError(null);
+
     const timeout = setTimeout(() => {
-      api.searchArtists(trimmed).then((data) => {
-        setResults(data);
-        setLoading(false);
-      });
+      api
+        .searchArtists(trimmed)
+        .then((data) => {
+          if (!active) return;
+          setResults(data);
+          setLoading(false);
+        })
+        .catch((err) => {
+          if (!active) return;
+          setError(err);
+          setLoading(false);
+        });
     }, 300);
 
-    return () => clearTimeout(timeout);
+    return () => {
+      active = false;
+      clearTimeout(timeout);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query]);
+  }, [query, retryToken]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -47,7 +66,24 @@ export function SearchPage() {
 
       {loading && <Spinner label="Recherche…" />}
 
-      {!loading && query.trim() && results.length === 0 && (
+      {!loading && error && (
+        <EmptyState
+          icon={ServerCrash}
+          title="Recherche indisponible"
+          description={`MusicBrainz n'a pas répondu (${error.message}). Le service externe est parfois instable, réessaie dans un instant.`}
+          action={
+            <button
+              type="button"
+              onClick={() => setRetryToken((t) => t + 1)}
+              className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-on-accent transition-colors hover:bg-accent-hover"
+            >
+              Réessayer
+            </button>
+          }
+        />
+      )}
+
+      {!loading && !error && query.trim() && results.length === 0 && (
         <EmptyState
           icon={SearchCode}
           title="Aucun artiste trouvé"
@@ -55,7 +91,7 @@ export function SearchPage() {
         />
       )}
 
-      {!loading && results.length > 0 && (
+      {!loading && !error && results.length > 0 && (
         <ul className="flex flex-col gap-2">
           {results.map((artist) => (
             <li key={artist.mbid}>

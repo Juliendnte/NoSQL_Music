@@ -9,7 +9,30 @@ import { api } from "../api";
 
 export function GraphPage() {
   const navigate = useNavigate();
-  const { data: graph, loading } = useApi(() => api.getGraph(), []);
+  const { data: rawGraph, loading } = useApi(() => api.getCollaborationGraph(), []);
+
+  // COLLABORATED_WITH is stored both ways in Neo4j (A->B and B->A), so the API
+  // returns each pair twice — dedupe by unordered pair before rendering/counting.
+  const graph = useMemo(() => {
+    if (!rawGraph) return null;
+    const seenPairs = new Set();
+    const edges = [];
+    for (const edge of rawGraph.edges) {
+      const key = [edge.source, edge.target].sort().join("|");
+      if (seenPairs.has(key)) continue;
+      seenPairs.add(key);
+      edges.push(edge);
+    }
+
+    const connectionsById = new Map();
+    for (const edge of edges) {
+      connectionsById.set(edge.source, (connectionsById.get(edge.source) ?? 0) + 1);
+      connectionsById.set(edge.target, (connectionsById.get(edge.target) ?? 0) + 1);
+    }
+
+    const nodes = rawGraph.nodes.map((n) => ({ id: n.id, name: n.label, connections: connectionsById.get(n.id) ?? 0 }));
+    return { nodes, edges };
+  }, [rawGraph]);
 
   const nameById = useMemo(() => {
     const map = new Map();
@@ -37,7 +60,7 @@ export function GraphPage() {
           <CollaborationGraph
             nodes={graph.nodes}
             edges={graph.edges}
-            onSelectArtist={(id) => navigate(`/artists/${id}`)}
+            onSelectArtist={(id) => navigate(`/artists/${id}`, { state: { name: nameById.get(id) } })}
           />
 
           {/* Accessible alternative: node-link graphs can't be conveyed to screen readers or via color alone. */}
@@ -51,7 +74,6 @@ export function GraphPage() {
                   <tr>
                     <th scope="col" className="px-4 py-2.5 font-medium">Artiste</th>
                     <th scope="col" className="px-4 py-2.5 font-medium">Collabore avec</th>
-                    <th scope="col" className="px-4 py-2.5 font-medium tabular-nums">Poids</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -59,7 +81,6 @@ export function GraphPage() {
                     <tr key={i} className="border-t border-border">
                       <td className="px-4 py-2.5 text-foreground">{nameById.get(edge.source) ?? edge.source}</td>
                       <td className="px-4 py-2.5 text-foreground">{nameById.get(edge.target) ?? edge.target}</td>
-                      <td className="px-4 py-2.5 text-foreground-muted tabular-nums">{edge.weight}</td>
                     </tr>
                   ))}
                 </tbody>

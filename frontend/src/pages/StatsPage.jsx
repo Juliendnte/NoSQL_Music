@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Users, Music2, Disc3, Share2 } from "lucide-react";
 import { StatCard } from "../components/charts/StatCard";
@@ -15,19 +14,12 @@ export function StatsPage() {
   const { data: topArtists, loading: loadingTopArtists } = useApi(() => api.getTopArtists(6), []);
   const { data: topGenres, loading: loadingTopGenres } = useApi(() => api.getTopGenres(6), []);
   const { data: topCollaborations, loading: loadingTopCollabs } = useApi(() => api.getTopCollaborations(5), []);
-  const { data: topTracks, loading: loadingTopTracks } = useApi(() => api.getTopTracks(5), []);
-  const { data: artists } = useApi(() => api.getArtists(), []);
+  const { data: topBridgeRecordings, loading: loadingBridges } = useApi(() => api.getTopBridgeRecordings(5), []);
 
-  const artistNameById = useMemo(() => {
-    const map = new Map();
-    for (const artist of artists ?? []) map.set(artist.mbid, artist.name);
-    return map;
-  }, [artists]);
+  const topArtistsChartData = (topArtists ?? []).map((t) => ({ name: t.artist.name, value: t.connections }));
+  const topGenresChartData = (topGenres ?? []).map((g) => ({ name: g.genre, value: g.artistCount }));
 
-  const topArtistsChartData = (topArtists ?? []).map((a) => ({ name: a.name, value: a.connections }));
-  const topGenresChartData = (topGenres ?? []).map((g) => ({ name: g.name, value: g.count }));
-
-  const loading = loadingOverview || loadingTopArtists || loadingTopGenres || loadingTopCollabs || loadingTopTracks;
+  const loading = loadingOverview || loadingTopArtists || loadingTopGenres || loadingTopCollabs || loadingBridges;
 
   return (
     <div className="flex flex-col gap-8">
@@ -63,40 +55,42 @@ export function StatsPage() {
               Top collaborations
             </h2>
             <ul className="flex flex-col gap-2">
-              {(topCollaborations ?? []).map(({ source, target, weight }, i) => (
+              {(topCollaborations ?? []).map(({ artist1, artist2, sharedRecordings }, i) => (
                 <li key={i}>
                   <Card className="flex items-center gap-3 p-3.5">
                     <span className="flex items-center -space-x-2">
                       <span className="flex size-8 items-center justify-center rounded-full border-2 border-surface bg-surface-muted text-[11px] font-semibold text-foreground">
-                        {initials(source.name)}
+                        {initials(artist1.name)}
                       </span>
                       <span className="flex size-8 items-center justify-center rounded-full border-2 border-surface bg-surface-muted text-[11px] font-semibold text-foreground">
-                        {initials(target.name)}
+                        {initials(artist2.name)}
                       </span>
                     </span>
                     <span className="min-w-0 flex-1 truncate text-sm text-foreground">
-                      <Link to={`/artists/${source.mbid}`} className="hover:underline">{source.name}</Link>
+                      <Link to={`/artists/${artist1.mbid}`} state={{ name: artist1.name }} className="hover:underline">
+                        {artist1.name}
+                      </Link>
                       {" × "}
-                      <Link to={`/artists/${target.mbid}`} className="hover:underline">{target.name}</Link>
+                      <Link to={`/artists/${artist2.mbid}`} state={{ name: artist2.name }} className="hover:underline">
+                        {artist2.name}
+                      </Link>
                     </span>
-                    <span className="shrink-0 text-sm text-foreground-muted tabular-nums">{weight} morceau(x)</span>
+                    <span className="shrink-0 text-sm text-foreground-muted tabular-nums">{sharedRecordings} morceau(x)</span>
                   </Card>
                 </li>
               ))}
             </ul>
           </section>
 
-          <section aria-labelledby="top-tracks-heading" className="flex flex-col gap-3">
-            <h2 id="top-tracks-heading" className="text-lg font-semibold text-foreground">
-              Top morceaux
+          <section aria-labelledby="top-bridges-heading" className="flex flex-col gap-3">
+            <h2 id="top-bridges-heading" className="text-lg font-semibold text-foreground">
+              Morceaux ponts
             </h2>
+            <p className="-mt-2 text-sm text-foreground-muted">Les titres qui relient le plus d'artistes différents.</p>
             <ul className="flex flex-col gap-2">
-              {(topTracks ?? []).map((recording) => (
+              {(topBridgeRecordings ?? []).map(({ recording, artistCount }) => (
                 <li key={recording.mbid}>
-                  <TrackRow
-                    recording={recording}
-                    artistNames={recording.artistIds?.map((aid) => artistNameById.get(aid)).filter(Boolean).join(", ")}
-                  />
+                  <TrackRow recording={recording} artistNames={`${artistCount} artistes`} />
                 </li>
               ))}
             </ul>

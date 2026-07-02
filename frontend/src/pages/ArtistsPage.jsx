@@ -7,15 +7,26 @@ import { useApi } from "../hooks/useApi";
 import { api } from "../api";
 
 export function ArtistsPage() {
-  const { data: artists, loading } = useApi(() => api.getArtists(), []);
+  const { data: artists, loading: loadingArtists } = useApi(() => api.getArtists(), []);
+  // Connections aren't embedded on plain artist records — merged in from the
+  // top-artists stat (capped at 50, the backend's max limit for that endpoint).
+  const { data: topArtists, loading: loadingTop } = useApi(() => api.getTopArtists(50), []);
   const [sort, setSort] = useState("name");
+  const loading = loadingArtists || loadingTop;
+
+  const connectionsById = useMemo(() => {
+    const map = new Map();
+    for (const entry of topArtists ?? []) map.set(entry.artist.mbid, entry.connections);
+    return map;
+  }, [topArtists]);
 
   const sorted = useMemo(() => {
     if (!artists) return [];
-    return [...artists].sort((a, b) =>
+    const withConnections = artists.map((a) => ({ ...a, connections: connectionsById.get(a.mbid) ?? 0 }));
+    return withConnections.sort((a, b) =>
       sort === "connections" ? b.connections - a.connections : a.name.localeCompare(b.name)
     );
-  }, [artists, sort]);
+  }, [artists, connectionsById, sort]);
 
   return (
     <div className="flex flex-col gap-6">
