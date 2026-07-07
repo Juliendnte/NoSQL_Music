@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MusicGraph — Soutenance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #0a0a0a;
+  --surface: #121212;
+  --surface-muted: #1c1c1c;
+  --border: rgba(255,255,255,0.14);
+  --border-strong: rgba(255,255,255,0.28);
+  --fg: #fafafa;
+  --fg-muted: #8f8f8f;
+  --accent: #c6ff3a;
+  --accent-hover: #d8ff6e;
+  --on-accent: #0a0a0a;
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-sans: 'DM Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.02em; }
+
+.slide-deck { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+@media (min-width: 769px) {
+  .slide-deck {
+    max-width: calc(100vh * 16 / 9);
+    max-height: calc(100vw * 9 / 16);
+    margin: auto;
+    position: absolute;
+    inset: 0;
+  }
+}
+
+.slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 64px 80px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.4s ease;
+  background: var(--bg);
+}
+.slide.active { opacity: 1; visibility: visible; }
+.slide-content {
+  width: 100%;
+  max-width: 1100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.slide-title {
+  font-size: clamp(28px, 4.2vw, 52px);
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--fg);
+}
+.slide-title .accent { color: var(--accent); }
+.subtitle { font-size: clamp(15px, 1.6vw, 19px); color: var(--fg-muted); max-width: 720px; line-height: 1.55; }
+
+/* Title slide */
+.logo-mark {
+  width: 64px; height: 64px;
+  border-radius: 16px;
+  background: var(--accent);
+  color: var(--on-accent);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display); font-weight: 700; font-size: 28px;
+}
+.authors { display: flex; gap: 28px; flex-wrap: wrap; justify-content: center; margin-top: 8px; }
+.author-chip {
+  font-family: var(--font-mono); font-size: 13px; color: var(--fg-muted);
+  border: 1px solid var(--border); border-radius: 999px; padding: 6px 16px;
+}
+
+/* Two column */
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; width: 100%; text-align: left; align-items: start; }
+.split h3 { font-size: 15px; color: var(--accent); margin-bottom: 12px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; }
+.split ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.split li { font-size: 15px; line-height: 1.5; color: var(--fg); padding-left: 18px; position: relative; }
+.split li::before { content: '—'; position: absolute; left: 0; color: var(--fg-muted); }
+
+/* Cards / grid */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px; text-align: left; }
+.metrics-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; width: 100%; }
+.metric-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px 14px; text-align: center; }
+.metric-value { font-family: var(--font-display); font-size: clamp(24px, 3vw, 36px); font-weight: 700; color: var(--accent); }
+.metric-label { font-size: 12px; color: var(--fg-muted); margin-top: 4px; }
+
+/* Architecture diagram */
+.arch-row { display: flex; align-items: center; gap: 14px; width: 100%; justify-content: center; flex-wrap: wrap; }
+.arch-box {
+  background: var(--surface); border: 1px solid var(--border-strong); border-radius: 12px;
+  padding: 16px 20px; min-width: 150px;
+}
+.arch-box .name { font-family: var(--font-display); font-weight: 600; font-size: 16px; }
+.arch-box .tech { font-family: var(--font-mono); font-size: 11px; color: var(--fg-muted); margin-top: 6px; line-height: 1.5; }
+.arch-arrow { color: var(--accent); font-size: 20px; }
+.arch-branch { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.arch-branch .arch-arrow { transform: rotate(90deg); }
+
+/* Data model diagram */
+.model-diagram { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
+.model-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.node-pill {
+  font-family: var(--font-display); font-weight: 600; font-size: 14px;
+  border: 1.5px solid var(--fg); border-radius: 999px; padding: 8px 18px; color: var(--fg);
+}
+.node-pill.accent-node { border-color: var(--accent); color: var(--accent); }
+.rel-label {
+  font-family: var(--font-mono); font-size: 11px; color: var(--fg-muted);
+  display: flex; align-items: center; gap: 6px;
+}
+.rel-label .arrow { color: var(--accent); }
+
+/* Numbered steps (demo flow) */
+.steps-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.step { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 130px; }
+.step-num {
+  width: 34px; height: 34px; border-radius: 50%; background: var(--surface-muted); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 14px; color: var(--accent);
+}
+.step-label { font-size: 13px; color: var(--fg-muted); }
+.step-sep { color: var(--border-strong); font-size: 18px; margin: 0 2px; }
+
+/* Big number hero */
+.hero-number { font-family: var(--font-display); font-size: clamp(80px, 12vw, 160px); font-weight: 700; color: var(--accent); line-height: 1; }
+
+/* Chart container */
+.chart-wrap { width: min(720px, 90%); height: clamp(220px, 34vh, 320px); }
+
+/* Challenge cards */
+.challenge-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; text-align: left; }
+.challenge-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px; }
+.challenge-card .tag {
+  display: inline-block; font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--on-accent); background: var(--accent); border-radius: 6px; padding: 3px 9px; margin-bottom: 12px;
+}
+.challenge-card p { font-size: 14px; line-height: 1.6; color: var(--fg-muted); }
+.challenge-card code { font-family: var(--font-mono); font-size: 12px; color: var(--fg); background: var(--surface-muted); padding: 1px 6px; border-radius: 4px; }
+
+/* Checklist */
+.checklist { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 32px; text-align: left; width: 100%; max-width: 640px; }
+.check-item { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.check-mark { color: var(--on-accent); background: var(--accent); width: 18px; height: 18px; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+
+/* Limits list */
+.limits-list { text-align: left; display: flex; flex-direction: column; gap: 12px; max-width: 760px; }
+.limits-list li { list-style: none; font-size: 15px; line-height: 1.55; color: var(--fg); padding-left: 20px; position: relative; }
+.limits-list li::before { content: '›'; position: absolute; left: 0; color: var(--accent); font-weight: 700; }
+.limits-list b { color: var(--accent); font-weight: 600; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .slide { padding: 32px 24px; }
+  .split, .challenge-grid { grid-template-columns: 1fr; }
+  .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+  .arch-row { flex-direction: column; }
+  .arch-arrow { transform: rotate(90deg); }
+}
+
+/* Nav */
+.progress-bar { position: fixed; top: 0; left: 0; height: 3px; background: var(--accent); transition: width 0.3s; z-index: 1000; }
+.nav-controls {
+  position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 18px; z-index: 1000;
+  font-family: var(--font-mono);
+}
+.nav-btn {
+  background: var(--surface); border: 1px solid var(--border); color: var(--fg);
+  width: 38px; height: 38px; border-radius: 50%; cursor: pointer; font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+}
+.nav-btn:hover { border-color: var(--accent); color: var(--accent); }
+.slide-counter { color: var(--fg-muted); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progressBar"></div>
+<div class="slide-deck">
+
+  <!-- 1. TITRE -->
+  <div class="slide active">
+    <div class="slide-content">
+      <div class="logo-mark">M</div>
+      <h1 class="slide-title">Music<span class="accent">Graph</span></h1>
+      <p class="subtitle">Exploration des collaborations musicales via l'API MusicBrainz, stockées et interrogées dans un graphe Neo4j.</p>
+      <p class="eyebrow" style="margin-top:20px;">Projet NoSQL — B3 Dev &amp; Data — YNOV Aix</p>
+      <div class="authors">
+        <span class="author-chip">Julien Dante</span>
+        <span class="author-chip">Kantin Fagniart</span>
+        <span class="author-chip">Nathanael Pivot</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. LE SUJET -->
+  <div class="slide">
+    <div class="slide-content">
+      <p class="eyebrow">01 — Le sujet</p>
+      <h2 class="slide-title">Un problème de graphe, résolu avec un outil de graphe</h2>
+      <div class="split" style="margin-top: 24px;">
+        <div>
+          <h3>Objectif</h3>
+          <ul>
+            <li>Rechercher un artiste via MusicBrainz</li>
+            <li>Importer artiste, morceaux, releases, collaborations dans Neo4j — sans doublon</li>
+            <li>Explorer le réseau de collaborations visuellement</li>
+            <li>Produire des statistiques d'analyse du graphe</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Pourquoi Neo4j</h3>
+          <ul>
+            <li>"Qui a collaboré avec qui" = chemins et connexions, pas des tables</li>
+            <li>Cypher exprime nativement ce que le SQL ferait en jointures récursives</li>
+            <li>Comptage de connexions, détection de hubs : direct en Cypher</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. MODELE DE DONNEES -->
+  <div class="slide">
+    <div class="slide-content">
+      <p class="eyebrow">02 — Modèle de données</p>
+      <h2 class="slide-title">6 types de nœuds, 8 relations typées</h2>
+      <div class="model-diagram" style="margin-top: 20px;">
+        <div class="model-row">
+          <span class="node-pill">Genre</span>
+          <span class="rel-label"><span class="arrow">←</span>ASSOCIATED_WITH_GENRE</span>
+          <span class="node-pill accent-node">Artist</span>
+          <span class="rel-label">FROM_AREA<span class="arrow">→</span></span>
+          <span class="node-pill">Area</span>
+        </div>
+        <div class="rel-label">COLLABORATED_WITH <span class="arrow">⟲</span> (bidirectionnelle)</div>
+        <div class="model-row">
+          <span class="node-pill accent-node">Artist</span>
+          <span class="rel-label">PERFORMED / FEATURED_ON<span class="arrow">→</span></span>
+          <span class="node-pill">Recording</span>
+          <span class="rel-label">APPEARS_ON<span class="arrow">→</span></span>
+          <span class="node-pill">Release</span>
+          <span class="rel-label">RELEASED_BY<span class="arrow">→</span></span>
+          <span class="node-pill">Label</span>
+        </div>
+      </div>
+      <p class="subtitle" style="margin-top:18px;">Détection des collaborations via les <code style="font-family:var(--font-mono);color:var(--accent)">artist-credit</code> MusicBrainz — plus fiable qu'un pattern-matching sur les titres (<code style="font-family:var(--font-mono)">feat.</code>, <code style="font-family:var(--font-mono)">ft.</code>...). Contrainte d'unicité sur <code style="font-family:var(--font-mono)">mbid</code> pour chaque nœud : zéro doublon, même en réimportant.</p>
+    </div>
+  </div>
+
+  <!-- 4. ARCHITECTURE -->
+  <div class="slide">
+    <div class="slide-content">
+      <p class="eyebrow">03 — Architecture &amp; stack</p>
+      <h2 class="slide-title">3 services, orchestrés par Docker Compose</h2>
+      <div class="arch-row" style="margin-top: 30px;">
+        <div class="arch-box">
+          <div class="name">Frontend</div>
+          <div class="tech">React 19 + Vite<br>Tailwind v4 + d3-force<br>Recharts</div>
+        </div>
+        <span class="arch-arrow">→</span>
+        <div class="arch-box">
+          <div class="name">API</div>
+          <div class="tech">FastAPI (Python 3.12)<br>httpx + tenacity<br>uv</div>
+        </div>
+        <span class="arch-arrow">→</span>
+        <div class="arch-box">
+          <div class="name">Neo4j</div>
+          <div class="tech">Base de données<br>graphe (Community 5)</div>
+        </div>
+      </div>
+      <div class="arch-branch" style="margin-top: 4px;">
+        <span class="arch-arrow">↓</span>
+        <div class="arch-box">
+          <div class="name">MusicBrainz</div>
+          <div class="tech">API publique — source des données</div>
+        </div>
+      </div>
+      <p class="subtitle" style="margin-top:20px;">Le frontend ne parle jamais à Neo4j ni à MusicBrainz directement : l'API est le seul point d'entrée. Code-splitting par route côté frontend — Graphe/Stats (d3-force, Recharts) ne se chargent que si on les visite.</p>
+    </div>
+  </div>
+
+  <!-- 5. DEMO -->
+  <div class="slide">
+    <div class="slide-content">
+      <p class="eyebrow">04 — Démonstration</p>
+      <h2 class="slide-title">Démonstration en direct</h2>
+      <div class="steps-row" style="margin-top: 30px;">
+        <div class="step"><div class="step-num">1</div><div class="step-label">Rechercher un artiste</div></div>
+        <span class="step-sep">→</span>
+        <div class="step"><div class="step-num">2</div><div class="step-label">Importer depuis MusicBrainz</div></div>
+        <span class="step-sep">→</span>
+        <div class="step"><div class="step-num">3</div><div class="step-label">Fiche artiste complète</div></div>
+        <span class="step-sep">→</span>
+        <div class="step"><div class="step-num">4</div><div class="step-label">Graphe de collaborations</div></div>
+        <span class="step-sep">→</span>
+        <div class="step"><div class="step-num">5</div><div class="step-label">Statistiques</div></div>
+      </div>
+      <p class="subtitle" style="margin-top: 26px;">→ Bascule vers l'application (localhost:5173)</p>
+    </div>
+  </div>
+
+  <!-- 6. RESULTATS -->
+  <div class="slide">
+    <div class="slide-content">
+      <p class="eyebrow">05 — Résultats</p>
+      <h2 class="slide-title">Un vrai graphe, importé en direct depuis MusicBrainz</h2>
+      <div class="metrics-grid" style="margin-top: 22px;">
+        <div class="metric-card"><div class="metric-value">16</div><div class="metric-label">Artistes</div></div>
+        <div class="metric-card"><div class="metric-value">95</div><div class="metric-label">Morceaux</div></div>
+        <div class="metric-card"><div class="metric-value">90</div><div class="metric-label">Releases</div></div>
+        <div class="metric-card"><div class="metric-value">12</div><div class="metric-label">Collaborations</div></div>
+        <div class="metric-card"><div class="metric-value">39</div><div class="metric-label">Genres</div></div>
+      </div>
+      <div class="chart-wrap" style="margin-top: 10px;">
+        <canvas id="topArtistsChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. COLLAB PHARE -->
+  <div class="slide">
+    <div class="slide-content">
+      <p class="eyebrow">05 — Résultats (suite)</p>
+      <h2 class="slide-title">La collaboration la plus dense du jeu de données</h2>
+      <div class="hero-number" style="margin-top:10px;">9</div>
+      <p class="subtitle" style="font-size: 20px; color: var(--fg);">morceaux partagés entre <b style="color:var(--accent)">SZA</b> et <b style="color:var(--accent)">Kendrick Lamar</b></p>
+      <p class="subtitle" style="max-width: 640px;">("All the Stars", <i>Black Panther: The Album</i> — présent sous plusieurs éditions/rééditions dans MusicBrainz, chacune comptée comme un <code style="font-family:var(--font-mono)">Recording</code> distinct). Trois hubs émergent dans le graphe : Damso (5 connexions), Dua Lipa (3), SZA (3) — un par artiste importé explicitement.</p>
+    </div>
+  </div>
+
+  <!-- 8. DEFIS -->
+  <div class="slide">
+    <div class="slide-content">
+      <p class="eyebrow">06 — Défis techniques</p>
+      <h2 class="slide-title">Deux problèmes réels, diagnostiqués et corrigés</h2>
+      <div class="challenge-grid" style="margin-top: 20px;">
+        <div class="challenge-card">
+          <span class="tag">Bug corrigé</span>
+          <p><b style="color:var(--fg)">400 Bad Request systématique sur chaque import.</b><br><br>
+          <code>inc=releases</code> envoyé à l'endpoint <i>browse</i> <code>/recording</code>, où ce paramètre n'est valide qu'en <i>lookup</i> direct. MusicBrainz rejetait 100% des imports. Paramètre inutilisé dans notre code — retiré.</p>
+        </div>
+        <div class="challenge-card">
+          <span class="tag">Résilience</span>
+          <p><b style="color:var(--fg)">MusicBrainz limite à ~1 req/s et pénalise les rafales.</b><br><br>
+          Throttle applicatif partagé + User-Agent identifié. Retry borné côté backend (3 tentatives, ~18s max) et bouton "Réessayer" côté frontend plutôt qu'un chargement infini.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 10. CONCLUSION -->
+  <div class="slide">
+    <div class="slide-content">
+      <p class="eyebrow">Conclusion</p>
+      <h2 class="slide-title">Ce qui a été livré</h2>
+      <div class="checklist" style="margin-top: 20px;">
+        <div class="check-item"><span class="check-mark">✓</span> API backend (FastAPI)</div>
+        <div class="check-item"><span class="check-mark">✓</span> Intégration MusicBrainz</div>
+        <div class="check-item"><span class="check-mark">✓</span> Modélisation Neo4j</div>
+        <div class="check-item"><span class="check-mark">✓</span> Qualité des données (mbid unique)</div>
+        <div class="check-item"><span class="check-mark">✓</span> Interface web complète</div>
+        <div class="check-item"><span class="check-mark">✓</span> Analyse de données réelles</div>
+        <div class="check-item"><span class="check-mark">✓</span> Docker Compose (1 commande)</div>
+        <div class="check-item"><span class="check-mark">✓</span> README &amp; documentation</div>
+      </div>
+      <h1 class="slide-title" style="margin-top: 36px;">Merci — <span class="accent">Questions ?</span></h1>
+    </div>
+  </div>
+
+</div>
+
+<div class="nav-controls">
+  <button class="nav-btn" onclick="prevSlide()">←</button>
+  <span class="slide-counter"><span id="current">1</span> / <span id="total">10</span></span>
+  <button class="nav-btn" onclick="nextSlide()">→</button>
+</div>
+
+<script>
+let current = 1;
+const total = document.querySelectorAll('.slide').length;
+document.getElementById('total').textContent = total;
+
+function showSlide(n) {
+  if (n < 1) n = 1;
+  if (n > total) n = total;
+  current = n;
+  document.querySelectorAll('.slide').forEach((s, i) => s.classList.toggle('active', i === n - 1));
+  document.getElementById('current').textContent = n;
+  document.getElementById('progressBar').style.width = (n / total * 100) + '%';
+}
+function nextSlide() { showSlide(current + 1); }
+function prevSlide() { showSlide(current - 1); }
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); nextSlide(); }
+  if (e.key === 'ArrowLeft') { e.preventDefault(); prevSlide(); }
+});
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.nav-controls')) nextSlide();
+});
+
+showSlide(1);
+
+new Chart(document.getElementById('topArtistsChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Damso', 'Dua Lipa', 'SZA', 'Kobo', 'SCH', 'WILLOW'],
+    datasets: [{
+      label: 'Connexions',
+      data: [5, 3, 3, 1, 1, 1],
+      backgroundColor: '#c6ff3a',
+      borderRadius: 4,
+      maxBarThickness: 34
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false }, title: { display: true, text: 'Artistes les plus connectés', color: '#8f8f8f', font: { family: 'DM Sans', size: 13 } } },
+    scales: {
+      x: { grid: { color: 'rgba(255,255,255,0.08)' }, ticks: { color: '#8f8f8f', font: { family: 'JetBrains Mono', size: 11 }, stepSize: 1 } },
+      y: { grid: { display: false }, ticks: { color: '#fafafa', font: { family: 'DM Sans', size: 13 } } }
+    }
+  }
+});
+</script>
+</body>
+</html>

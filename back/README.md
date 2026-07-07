@@ -92,7 +92,12 @@ curl http://localhost:8000/api/artists/056e4f3e-d505-4dad-8ec1-d04f521cbb56/coll
 - Le client MusicBrainz respecte la limite d'1 requête/seconde imposée par l'API et retente automatiquement en cas de `503`.
 - Les collaborations sont détectées via les `artist-credit` renvoyés par MusicBrainz (liste des artistes crédités sur un même morceau), qui est la source la plus fiable — plus robuste que du simple pattern-matching sur les titres (`feat.`, `ft.`, etc.).
 
+## Documentation
+
+- [`docs/data-model.md`](docs/data-model.md) — schéma détaillé (nœuds, relations, contraintes, requêtes clés)
+- [`docs/technical-choices.md`](docs/technical-choices.md) — justification des choix techniques et alternatives écartées
+- [`docs/data-analysis.md`](docs/data-analysis.md) — méthodologie d'analyse, requêtes de stats, limites (valeurs à régénérer une fois un vrai jeu de données importé)
+
 ## À venir
 
 - `data/` : exports / jeux de données
-- `docs/` : documentation du modèle et des choix techniques

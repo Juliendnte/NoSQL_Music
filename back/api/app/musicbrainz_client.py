@@ -34,8 +34,11 @@ class MusicBrainzClient:
                 await asyncio.sleep(self._min_interval - elapsed)
             self._last_call = time.monotonic()
 
+    # 3 tentatives x 5s de timeout max = ~18s pire cas avant de renvoyer l'erreur
+    # au lieu de laisser l'utilisateur face à un spinner pendant plus d'une minute
+    # (avec 5 tentatives x 15s, un échec total prenait jusqu'à ~80s).
     @retry(
-        stop=stop_after_attempt(5),
+        stop=stop_after_attempt(3),
         wait=wait_fixed(1.5),
         retry=retry_if_exception_type((httpx.HTTPStatusError, httpx.TransportError)),
         reraise=True,
@@ -44,7 +47,7 @@ class MusicBrainzClient:
         await self._throttle()
         params = {**params, "fmt": "json"}
         url = f"{self.base_url}{path}"
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with httpx.AsyncClient(timeout=5.0) as client:
             resp = await client.get(url, params=params, headers=self.headers)
             if resp.status_code == 503:
                 # MusicBrainz renvoie 503 quand on va trop vite -> on retente
@@ -69,10 +72,14 @@ class MusicBrainzClient:
         par MusicBrainz pour lister les entités liées à un artiste.
         inc=artist-credits est essentiel : c'est ce qui nous permet de
         détecter les featurings / collaborations.
+        NB: "releases" n'est PAS un inc valide sur un browse recording (seulement
+        sur un lookup /recording/{mbid}) -> l'ajouter ici fait renvoyer un 400 par
+        MusicBrainz. Le lien morceau -> release est de toute façon fait plus loin
+        via browse_releases_by_artist (inc=recordings), pas ici.
         """
         data = await self._get(
             "/recording",
-            {"artist": artist_mbid, "inc": "artist-credits+releases", "limit": limit},
+            {"artist": artist_mbid, "inc": "artist-credits", "limit": limit},
         )
         return data.get("recordings", [])
 

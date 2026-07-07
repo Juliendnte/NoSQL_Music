@@ -16,12 +16,12 @@ class Settings(BaseSettings):
     # MusicBrainz
     musicbrainz_base_url: str = "https://musicbrainz.org/ws/2"
     musicbrainz_user_agent: str = "MusicGraph/1.0 (contact@example.com)"
-    musicbrainz_rate_limit_seconds: float = 1.0
+    musicbrainz_rate_limit_seconds: float = 1.1
 
     # API
     api_host: str = "0.0.0.0"
     api_port: int = 8000
-    cors_origins: str = "http://localhost:3000,http://localhost:5173"
+    cors_origins: str = "http://localhost:5173"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

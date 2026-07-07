@@ -87,6 +87,8 @@ graph LR
 
 Tous les nœuds ont une **contrainte d'unicité sur `mbid`** (créée automatiquement au démarrage de l'API) : réimporter un artiste ne crée jamais de doublon, seulement des `MERGE`. `COLLABORATED_WITH` est détectée via les `artist-credit` MusicBrainz (liste des artistes crédités sur un même morceau) — plus fiable qu'un simple pattern-matching sur les titres (`feat.`, `ft.`...).
 
+Documentation détaillée : [`back/docs/data-model.md`](back/docs/data-model.md) (schéma complet, requêtes clés) · [`back/docs/technical-choices.md`](back/docs/technical-choices.md) (choix techniques justifiés) · [`back/docs/data-analysis.md`](back/docs/data-analysis.md) (méthodologie d'analyse et limites).
+
 ## Structure du repo
 
 ```
@@ -161,8 +163,9 @@ Endpoints principaux de l'API (liste complète et testable sur `/docs`) :
 
 ## Limitations connues
 
-- **Disponibilité de MusicBrainz** : l'API publique MusicBrainz peut être temporairement injoignable selon le réseau (instabilité intermittente observée en développement, indépendante du code applicatif — reproduite avec `curl`, `httpx` et des handshakes TLS bruts). Le backend ré-essaie automatiquement (5 tentatives), et le frontend affiche un message d'erreur clair avec un bouton **Réessayer** plutôt qu'un chargement infini. Si une recherche échoue, réessayer quelques instants après suffit généralement.
-- **Débit d'import** : MusicBrainz limite à 1 requête/seconde ; importer un artiste avec beaucoup de morceaux/releases peut donc prendre plusieurs secondes (comportement attendu, pas un bug).
+- **Rate limiting MusicBrainz** : l'API publique [limite à ~1 requête/seconde par IP](https://musicbrainz.org/doc/MusicBrainz_API/Rate_Limiting) et pénalise les rafales (pas seulement la moyenne). L'app respecte déjà cette limite (throttle intégré + User-Agent identifié), mais si l'IP a été mise en pénalité (ex. par des tests manuels répétés en dehors de l'app), la recherche/l'import peuvent échouer (`503`/erreurs de connexion) le temps que le débit redescende — voir [back/docs/data-analysis.md#limites](back/docs/data-analysis.md#limites) pour le diagnostic complet. Le backend ré-essaie automatiquement (3 tentatives, échec en ~18s max), et le frontend affiche un message d'erreur clair avec un bouton **Réessayer** plutôt qu'un chargement infini.
+- **Débit d'import** : même en dehors de toute pénalité, MusicBrainz limite à ~1 requête/seconde ; importer un artiste avec beaucoup de morceaux/releases peut donc prendre plusieurs secondes (comportement attendu, pas un bug).
+- **Ne jamais tester MusicBrainz manuellement en boucle rapide** (scripts, `curl` répétés en dehors de l'app) — ça consomme le même quota et peut déclencher la pénalité pour tout le monde sur le projet.
 
 ## Auteurs
 
